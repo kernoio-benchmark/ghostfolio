@@ -3,6 +3,7 @@
 This repository uses a **`.har/` harness** for isolated agent development.
 
 <!-- har:agent-environment:start -->
+
 ## HAR / agent environment
 
 This repository uses a `.har/` harness. It is **how you run and verify this
