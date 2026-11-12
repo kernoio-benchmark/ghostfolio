@@ -1,0 +1,37 @@
+{
+  "id": "prisma-drift",
+  "verificationStages": [
+    "prisma-drift"
+  ],
+  "stages": [
+    {
+      "id": "prisma-drift",
+      "kind": "test",
+      "description": "Fail when prisma/schema.prisma has changes not captured by a migration",
+      "script": "stages/prisma-drift.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/prisma-drift",
+          "kind": "directory",
+          "description": "Artifacts for the prisma-drift stage"
+        }
+      ],
+      "tier": "full"
+    }
+  ],
+  "files": [
+    {
+      "src": "stages/prisma-drift.sh",
+      "dest": ".har/stages/prisma-drift.sh",
+      "executable": true
+    }
+  ],
+  "nextSteps": [
+    "Edit .har/plugins/prisma-drift/stages/prisma-drift.sh — replace the TODO block with the real check",
+    "har env launch 1",
+    "./.har/stages/prisma-drift.sh 1",
+    "har env verify 1 --full   # runs it as part of full verification"
+  ],
+  "docsPath": ".har/plugins/prisma-drift/README.md"
+}

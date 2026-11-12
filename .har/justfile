@@ -1,0 +1,38 @@
+# Agent harness shortcuts — requires `just` (https://github.com/casey/just)
+
+set shell := ["bash", "-cu"]
+
+repo := justfile_directory() + "/.."
+
+setup:
+    har env setup-infra --repo {{repo}}
+
+launch id:
+    har env launch {{id}} --repo {{repo}}
+
+teardown id:
+    har env teardown {{id}} --repo {{repo}}
+
+verify id:
+    har env verify {{id}} --repo {{repo}}
+
+verify-full id:
+    har env verify {{id}} --full --repo {{repo}}
+
+status:
+    har env status --repo {{repo}}
+
+launch-all count:
+    #!/usr/bin/env bash
+    for id in $(seq 1 {{count}}); do
+        har env launch "$id" --repo "{{repo}}"
+    done
+
+teardown-all:
+    #!/usr/bin/env bash
+    for id in 1 2 3 4 5; do
+        har env teardown "$id" --repo "{{repo}}" 2>/dev/null || true
+    done
+
+cli id cmd *args:
+    har env agent {{id}} {{cmd}} {{args}} --repo {{repo}}

@@ -1,0 +1,14 @@
+---
+description: HAR harness workflow — read AGENTS.md before changing anything
+alwaysApply: true
+---
+
+# HAR Harness Workflow
+
+This repository uses a `.har/` agent harness. **Read [`AGENTS.md`](../../AGENTS.md)
+and follow it** — it is the single source of truth for the harness workflow
+(launch a slot first, edit only in the work dir, full verify before done, stop at
+handoff). `.har/README.md` has the harness detail.
+
+This rule exists only to guarantee that instruction reaches every Cursor session;
+it deliberately does not restate the workflow, so there is one copy to keep current.

@@ -1,0 +1,41 @@
+{
+  "version": "1",
+  "outputDir": ".har",
+  "createdAt": "2026-11-12T13:34:23.250Z",
+  "updatedAt": "2026-11-12T14:36:57.761Z",
+  "adaptationSummary": "Adapted for Ghostfolio (Nx: NestJS api + Angular client per slot via PM2; shared postgres:15 + redis:8 with per-slot DB agent_<id> and REDIS_DB=<id>; prisma migrate deploy per slot (template DB intentionally empty); post-launch hook seeds tags + demo ADMIN user (token har-demo-security-token); per-slot Angular proxy, HTTP/no-HMR client; verify quick=tsc+api-health, full=+jest/eslint/prettier/agent-usable smoke; agentSlots.max=3)",
+  "profile": "default",
+  "runtimeVersion": "1.0.0",
+  "cliVersion": "1.18.0",
+  "fileChecksums": {
+    ".gitignore": "cd13b779520b9ba6",
+    "README.md": "d9f42ffbcc99c56d",
+    "STAGES.md": "b7eccf2bc2bbc017",
+    "docker-compose.agent.yml": "4846b82dab8c32e0",
+    "ecosystem.agent.template.cjs": "0726afbd9bb19efb",
+    "env.template": "b51fbc22fe278816",
+    "gitignore.template": "cd13b779520b9ba6",
+    "harness.env": "50f824982959465f",
+    "justfile": "4031b427c60cd8c0",
+    "stages.json": "7bb852fe434a1762",
+    "stages/README.sh": "23b2e858dd2dc27a",
+    "stages/agent-usable.sh": "1a67ee071d3f46d6",
+    "stages/api-health.sh": "935bdde7cf0f7cab",
+    "stages/readiness.sh": "8c8d7574d52d54b4"
+  },
+  "templateChecksums": {
+    "STAGES.md": "b7eccf2bc2bbc017",
+    "lib/verify-runner.mjs": "42f6ba565d51b854",
+    "stages/README.sh": "23b2e858dd2dc27a",
+    "stages/readiness.sh": "8c8d7574d52d54b4",
+    "ecosystem.agent.template.cjs": "d61d6abc056ca32e",
+    "env.template": "d219f0f4ae1e60a1",
+    "stages/api-health.sh": "935bdde7cf0f7cab",
+    "docker-compose.agent.yml": "391c6bd079f77ef5",
+    ".gitignore": "cd13b779520b9ba6",
+    "harness.env": "d00867f7cc3a842a",
+    "justfile": "4031b427c60cd8c0",
+    "stages.json": "ac87f0db5339e6a6",
+    "README.md": "f1bb48299844e3f4"
+  }
+}

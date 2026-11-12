@@ -1,0 +1,20 @@
+{
+  "version": "1",
+  "profile": "default",
+  "bundles": [
+    "shared-kernel",
+    "pm2-runtime",
+    "runtime-default"
+  ],
+  "plugins": [
+    {
+      "id": "prisma-drift",
+      "source": "local",
+      "spec": "prisma-drift",
+      "stageIds": [
+        "prisma-drift"
+      ],
+      "installedAt": "2026-11-12T14:36:57.760Z"
+    }
+  ]
+}
