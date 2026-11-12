@@ -1,0 +1,46 @@
+# Shared infrastructure — ONE instance serves all agent slots (fixed ports).
+#
+# Mirrors docker/docker-compose.dev.yml (PostgreSQL 15 + Redis 8), with the
+# credentials the HAR runtime expects (postgres / password) and host ports
+# taken from the lanes in harness.env (HARNESS_INFRA_PORT_LANES).
+# Only services listed in HARNESS_INFRA_SERVICES are started by
+# `har env setup-infra` (also run automatically by `har env launch`).
+services:
+  db:
+    image: docker.io/library/postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "${AGENT_DB_PORT:-15450}:5432"
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - agent-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+    shm_size: 256m
+
+  # Shared by all slots; each slot uses its own logical DB (REDIS_DB=<agent id>).
+  # Host port is the fixed `redis` lane default in harness.env.
+  redis:
+    image: docker.io/library/redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - "${AGENT_REDIS_PORT:-16379}:6379"
+    command: ["redis-server", "--requirepass", "password", "--databases", "16"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a password --no-auth-warning ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  agent-db-data:

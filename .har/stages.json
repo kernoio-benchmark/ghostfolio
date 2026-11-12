@@ -1,0 +1,167 @@
+{
+  "version": "1",
+  "artifactsDir": "artifacts",
+  "logsDir": "logs",
+  "agentSlots": {
+    "min": 1,
+    "max": 3
+  },
+  "verificationStages": [
+    "typecheck",
+    "api-health",
+    "unit-tests",
+    "lint",
+    "readiness",
+    "format-check",
+    "agent-usable",
+    "prisma-drift"
+  ],
+  "stages": [
+    {
+      "id": "setup-infra",
+      "kind": "setup",
+      "description": "Shared infrastructure (Docker, template DB)",
+      "artifacts": []
+    },
+    {
+      "id": "launch",
+      "kind": "launch",
+      "description": "Launch an isolated agent environment slot",
+      "artifacts": [
+        {
+          "path": ".env.agent.{agentId}",
+          "kind": "file",
+          "description": "Generated per-agent environment file in the session work dir"
+        }
+      ]
+    },
+    {
+      "id": "verify",
+      "kind": "verify",
+      "description": "Verification pipeline: runs stages.json verificationStages in order (tier \"quick\" by default; --full runs the whole list)",
+      "artifacts": [
+        {
+          "path": ".har/artifacts",
+          "kind": "directory",
+          "description": "Optional verification outputs such as reports, traces, screenshots, and logs"
+        }
+      ],
+      "acceptsArgs": [
+        "--full"
+      ]
+    },
+    {
+      "id": "status",
+      "kind": "inspect",
+      "description": "Inspect a running agent environment slot",
+      "artifacts": [
+        {
+          "path": ".har/logs",
+          "kind": "directory",
+          "description": "Optional harness logs"
+        }
+      ]
+    },
+    {
+      "id": "logs",
+      "kind": "inspect",
+      "description": "Read recent logs for an agent slot",
+      "artifacts": []
+    },
+    {
+      "id": "teardown",
+      "kind": "teardown",
+      "description": "Stop processes and release agent slot resources",
+      "artifacts": []
+    },
+    {
+      "id": "typecheck",
+      "kind": "test",
+      "description": "TypeScript compile smoke for apps/api and apps/client (tsc --noEmit, no Nx)",
+      "command": "npx --no-install tsc --noEmit -p apps/api/tsconfig.app.json && npx --no-install tsc --noEmit -p apps/client/tsconfig.app.json",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "quick"
+    },
+    {
+      "id": "api-health",
+      "kind": "test",
+      "description": "NestJS GET /api/v1/health on the slot API port (PostgreSQL + Redis reachable)",
+      "script": "stages/api-health.sh",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "quick"
+    },
+    {
+      "id": "unit-tests",
+      "kind": "test",
+      "description": "Jest via Nx for all projects (npm test, as CI)",
+      "command": "${NPM_BIN:-npm} run test",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "lint",
+      "kind": "test",
+      "description": "ESLint via Nx for all projects (npm run lint -- --quiet, as CI)",
+      "command": "${NPM_BIN:-npm} run lint -- --quiet",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "readiness",
+      "kind": "test",
+      "description": "Generic HARNESS_READINESS_CMD hook — unused here (not in verificationStages); see agent-usable",
+      "script": "stages/readiness.sh",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "format-check",
+      "kind": "test",
+      "description": "Prettier check via Nx (npm run format:check, as CI)",
+      "command": "${NPM_BIN:-npm} run format:check",
+      "artifacts": [],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "agent-usable",
+      "kind": "test",
+      "description": "Layer-4 smoke: demo admin signs in via API, client serves /en/ and proxies /api to the slot",
+      "script": "stages/agent-usable.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/agent-usable",
+          "kind": "directory",
+          "description": "Authenticated /api/v1/user response and client index.html"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "prisma-drift",
+      "kind": "test",
+      "description": "Fail when prisma/schema.prisma has changes not captured by a migration",
+      "script": "stages/prisma-drift.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/prisma-drift",
+          "kind": "directory",
+          "description": "Artifacts for the prisma-drift stage"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    }
+  ],
+  "commitGate": {
+    "enabled": true,
+    "mode": "block",
+    "scope": "worktrees"
+  }
+}
