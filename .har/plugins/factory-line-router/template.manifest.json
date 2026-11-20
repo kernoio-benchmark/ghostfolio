@@ -1,0 +1,49 @@
+{
+  "id": "factory-line-router",
+  "verificationStages": [
+    "factory-line-router"
+  ],
+  "stages": [
+    {
+      "id": "factory-line-router",
+      "kind": "test",
+      "description": "Route the diff to the factory lines it touches (auth-change, banking-change) and require their final-station gate to be green for the exact tree",
+      "script": "stages/factory-line-router.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/factory-line-router",
+          "kind": "directory",
+          "description": "Artifacts for the factory-line-router stage"
+        },
+        {
+          "path": ".har/artifacts/factory-line-stamps",
+          "kind": "directory",
+          "description": "Per-slot gate stamps (tree fingerprint + status) written by line stages"
+        }
+      ],
+      "tier": "full"
+    }
+  ],
+  "files": [
+    {
+      "src": "stages/factory-line-router.sh",
+      "dest": ".har/stages/factory-line-router.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/factory-line-router.mjs",
+      "dest": ".har/stages/factory-line-router.mjs"
+    },
+    {
+      "src": "stages/lib/factory-line.mjs",
+      "dest": ".har/stages/lib/factory-line.mjs"
+    }
+  ],
+  "nextSteps": [
+    "har line add auth-change && har line add banking-change",
+    "har env verify <id> --full   # router runs last; triggered lines must be gated first",
+    "har line gate S3 --line <line> --agent <id>"
+  ],
+  "docsPath": ".har/plugins/factory-line-router/README.md"
+}

@@ -44,6 +44,8 @@ together, so both run in each slot.
 | `ecosystem.agent.template.cjs` | PM2 processes for the api and client. Also writes the per-slot Angular proxy config |
 | `docker-compose.agent.yml` | Shared `db` (postgres:15-alpine) and `redis` (redis:8-alpine) |
 | `STAGES.md` | Stage registry and script-contract guide |
+| `lines/` + `lines.json` | Factory lines `auth-change` and `banking-change` (programs, territories, gate stages) |
+| `plugins/factory-line-router/` | Verification plugin: routes a diff to the lines it touches + shared line-stage library |
 | `justfile` | Optional shortcuts (requires `just`) |
 
 **Generated state** (don't edit):
@@ -149,7 +151,7 @@ so it only runs inside a slot. Migrating a fresh clone takes a few seconds.
 | Mode | Command | Stages (in order) |
 |------|---------|-------------------|
 | Quick | `har env verify <id>` | `typecheck` (`tsc --noEmit` for `apps/api` + `apps/client`), `api-health` |
-| Full | `har env verify <id> --full` | quick stages + `unit-tests` (`npm run test`), `lint` (`npm run lint -- --quiet`), `format-check` (`npm run format:check`), `agent-usable` |
+| Full | `har env verify <id> --full` | quick stages + `unit-tests` (`npm run test`), `lint` (`npm run lint -- --quiet`), `format-check` (`npm run format:check`), `agent-usable`, `prisma-drift`, `factory-line-router` |
 
 Full verify mirrors CI (`.github/workflows/build-code.yml`) except
 `npm run build:production`, which is too heavy for the loop. Run it by hand in
@@ -157,8 +159,26 @@ the work dir for build-sensitive changes (Angular i18n, assets, webpack config).
 `npm run test` uses `npx dotenv-cli -e .env.example`, so the first run downloads
 `dotenv-cli`.
 
+## Factory lines (auth and banking)
+
+Changes to **authentication** or **banking** (accounts, balances, transfers,
+platforms) go through a factory line with extra checks. `factory-line-router`,
+the last stage of `verify --full`, detects the territory from the diff and
+fails until the line's gate is green **for the exact tree**:
+
+```bash
+har line status                                        # stations + progress
+har line gate S3 --line auth-change    --agent <id>    # S1 static → S2 unit → S3 live attack probes
+har line gate S3 --line banking-change --agent <id>    # S1 ledger contract → S2 unit → S3 live ledger proofs
+```
+
+Run the gate after the last edit and before `verify --full`. Any edit after the
+gate makes it stale. Line stages are never part of `verificationStages`. Full
+picture and schema: [`lines/README.md`](lines/README.md).
+
 ## Definition of done
 
+- [ ] Touched auth or banking? `har line gate S3 --line <auth-change|banking-change> --agent <id>` is green (the router enforces it)
 - [ ] `har env verify <id> --full` returns `"status": "pass"`
 - [ ] The change works in the running slot (sign in with the demo token and exercise it in the UI or API), not only health-green
 - [ ] New behavior has Jest coverage (`*.spec.ts` next to the code in `apps/api`, `apps/client`, `libs/*`)

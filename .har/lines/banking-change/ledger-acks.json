@@ -1,0 +1,4 @@
+{
+  "$comment": "Reviewed exceptions to banking-contract (S1). A destructive migration on a banking table, or a deliberate change to a ledger invariant, fails S1 unless acknowledged here with a reason. Entry: {\"subject\": \"<migration file or invariant id>\", \"change\": \"<exact change string from the S1 report>\", \"reason\": \"why this is intended and how data is preserved\"}.",
+  "acks": []
+}

@@ -1,0 +1,87 @@
+{
+  "kind": "line",
+  "id": "banking-change",
+  "title": "Banking change line",
+  "program": "line.json",
+  "files": [
+    {
+      "src": "stages/banking-contract.sh",
+      "dest": ".har/stages/banking-contract.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/banking-contract.mjs",
+      "dest": ".har/stages/banking-contract.mjs"
+    },
+    {
+      "src": "stages/banking-unit-tests.sh",
+      "dest": ".har/stages/banking-unit-tests.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/banking-unit-tests.mjs",
+      "dest": ".har/stages/banking-unit-tests.mjs"
+    },
+    {
+      "src": "stages/banking-e2e.sh",
+      "dest": ".har/stages/banking-e2e.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/banking-e2e.mjs",
+      "dest": ".har/stages/banking-e2e.mjs"
+    }
+  ],
+  "stages": [
+    {
+      "id": "banking-contract",
+      "kind": "test",
+      "description": "banking-change S1 — banking route policy, ledger schema invariants, migration safety (line gate, never on verify)",
+      "script": "stages/banking-contract.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-contract",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-contract"
+        }
+      ],
+      "tier": "full"
+    },
+    {
+      "id": "banking-unit-tests",
+      "kind": "test",
+      "description": "banking-change S2 — every spec in the banking territory passes; banking source changes ship with specs (line gate, never on verify)",
+      "script": "stages/banking-unit-tests.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-unit-tests",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-unit-tests"
+        }
+      ],
+      "tier": "full"
+    },
+    {
+      "id": "banking-e2e",
+      "kind": "test",
+      "description": "banking-change S3 — live ledger proofs: conservation, invalid transfers, daily balances, IDOR isolation, cascade (line gate, never on verify)",
+      "script": "stages/banking-e2e.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-e2e",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-e2e"
+        }
+      ],
+      "tier": "full"
+    }
+  ],
+  "nextSteps": [
+    "har line status banking-change",
+    "har line gate S3 --line banking-change --agent <id>"
+  ],
+  "docsPath": ".har/lines/banking-change/README.md"
+}

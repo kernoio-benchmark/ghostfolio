@@ -47,6 +47,9 @@ commit gate: [`.har/README.md`](.har/README.md) and [`.har/stages.json`](.har/st
   api-health, Jest, ESLint, Prettier, agent-usable smoke). Changes are exercised
   in the running slot, have `*.spec.ts` coverage, user-facing strings use
   Angular i18n, and the work is committed in the session worktree.
+- **Auth / banking changes:** a factory line applies. `verify --full` fails
+  (`factory-line-router`) until `har line gate S3 --line auth-change|banking-change --agent <id>`
+  is green for the exact tree. See [`.har/lines/README.md`](.har/lines/README.md).
 - **Schema changes:** edit `prisma/schema.prisma`, create a migration with
   `npm run prisma -- migrate dev --name <change>` in the work dir, then
   `har env agent <id> restart`.

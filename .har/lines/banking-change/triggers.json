@@ -1,0 +1,36 @@
+{
+  "$comment": "Territory of the banking-change line: cash accounts, account balances, balance transfers and platforms (banks/brokers). factory-line-router (verify --full) requires a green S3 gate for the exact tree whenever a change matches. Globs are relative to the repo root; ** spans directories.",
+  "paths": [
+    ".har/lines/banking-change/**",
+    "apps/api/src/app/endpoints/accounts/**",
+    "apps/api/src/app/endpoints/platforms/**",
+    "apps/api/src/services/account/**",
+    "apps/api/src/services/account-balance/**",
+    "apps/api/src/services/platform/**",
+    "apps/api/src/helper/account.helper*",
+    "libs/common/src/lib/dtos/*account*.ts",
+    "libs/common/src/lib/dtos/transfer-balance.dto.ts",
+    "libs/common/src/lib/dtos/*platform*.ts",
+    "libs/common/src/lib/validator-constraints/is-valid-account-balance-date*",
+    "libs/common/src/lib/interfaces/account-balance.interface.ts",
+    "libs/common/src/lib/interfaces/responses/account*.ts",
+    "libs/common/src/lib/interfaces/responses/platform*.ts",
+    "libs/common/src/lib/types/account-with-*.ts",
+    "apps/client/src/app/pages/accounts/**",
+    "apps/client/src/app/components/account-detail-dialog/**",
+    "apps/client/src/app/components/admin-platform/**",
+    "libs/ui/src/lib/account-balances/**",
+    "libs/ui/src/lib/accounts-table/**"
+  ],
+  "ignore": ["**/*.scss", "**/*.stories.ts"],
+  "prismaModels": ["Account", "AccountBalance", "Platform", "TagsOnAccounts"],
+  "specs": [
+    "apps/api/src/helper/account.helper.spec.ts",
+    "apps/api/src/app/portfolio/calculator/*/portfolio-calculator-cash.spec.ts",
+    "libs/common/src/lib/validator-constraints/is-valid-account-balance-date.spec.ts",
+    "apps/api/src/services/account*/**/*.spec.ts",
+    "apps/api/src/services/platform/**/*.spec.ts",
+    "apps/api/src/app/endpoints/accounts/**/*.spec.ts",
+    "apps/api/src/app/endpoints/platforms/**/*.spec.ts"
+  ]
+}
