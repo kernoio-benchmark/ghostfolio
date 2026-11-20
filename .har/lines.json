@@ -11,7 +11,7 @@
         "auth-e2e"
       ],
       "programPath": ".har/lines/auth-change/line.json",
-      "installedAt": "2026-11-20T17:05:18.333Z"
+      "installedAt": "2026-11-20T17:38:57.505Z"
     },
     {
       "id": "banking-change",
@@ -23,7 +23,7 @@
         "banking-e2e"
       ],
       "programPath": ".har/lines/banking-change/line.json",
-      "installedAt": "2026-11-20T17:05:18.519Z"
+      "installedAt": "2026-11-20T17:38:57.781Z"
     }
   ]
 }

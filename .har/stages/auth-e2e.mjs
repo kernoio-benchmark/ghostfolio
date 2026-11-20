@@ -6,8 +6,9 @@
 //     tampered payload, unknown user) vs a self-signed valid token → 200
 //   - security-token sign-in (wrong token 403) and token rotation (old token
 //     dead, new token works)
-//   - route sweep: every route the inventory says is behind AuthGuard('jwt')
-//     or AuthGuard('api-key') rejects anonymous and forged callers
+//   - route sweep: every route the inventory (current ∪ merge base) says is
+//     behind AuthGuard('jwt') or AuthGuard('api-key') rejects anonymous and
+//     forged callers
 //   - impersonation and cross-user isolation: user B can't impersonate or read
 //     user A without an access grant
 // Test users/accounts it creates are deleted at the end.
@@ -19,8 +20,11 @@ import {
   PROBE_UUID,
   ROUTE_SNAPSHOT,
   assert,
+  fileAtBase,
   http,
+  mergeBase,
   parseRouteSnapshot,
+  readJson,
   routeToRequest,
   runLineStage,
   signIn,
@@ -100,9 +104,23 @@ await runLineStage('auth-e2e', { lineId: 'auth-change', title: 'S3 attack the li
   });
 
   // Inventory-driven sweep: every authenticated route, as anonymous and forged.
+  // The set is the union of the CURRENT inventory and the MERGE-BASE one, so a
+  // change that drops a guard and rewrites the snapshot to hide it is still
+  // swept. Only a weakening acknowledged in security-acks.json leaves the set.
   const routes = parseRouteSnapshot(fs.readFileSync(path.join(ctx.workDir, ROUTE_SNAPSHOT), 'utf8'));
-  const jwtRoutes = Object.entries(routes).filter(([, v]) => (v.guards ?? []).includes("AuthGuard('jwt')"));
-  const keyRoutes = Object.entries(routes).filter(([, v]) => (v.guards ?? []).includes("AuthGuard('api-key')"));
+  const baseRoutes = parseRouteSnapshot(fileAtBase(ctx.workDir, mergeBase(ctx.workDir).sha, ROUTE_SNAPSHOT));
+  const acks = readJson(path.join(ctx.workDir, '.har/lines/auth-change/security-acks.json'), { acks: [] }).acks;
+  const authedBy = (guard) => {
+    const keys = new Set();
+    for (const [key, v] of Object.entries(routes)) if ((v.guards ?? []).includes(guard)) keys.add(key);
+    for (const [key, v] of Object.entries(baseRoutes)) {
+      const ackedWeakening = acks.some((a) => a.subject === key && a.reason);
+      if ((v.guards ?? []).includes(guard) && routes[key] && !ackedWeakening) keys.add(key);
+    }
+    return [...keys].sort().map((k) => [k]);
+  };
+  const jwtRoutes = authedBy("AuthGuard('jwt')");
+  const keyRoutes = authedBy("AuthGuard('api-key')");
   const sweep = async (entries, opts, label) => {
     const results = await pool(entries, 8, async ([key]) => {
       const req = routeToRequest(key, api, PROBE_UUID);
