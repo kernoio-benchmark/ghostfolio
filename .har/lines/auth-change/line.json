@@ -1,0 +1,103 @@
+{
+  "contractVersion": 1,
+  "id": "auth-change",
+  "title": "Authentication change line",
+  "description": "Extensive checks for any change that touches authentication, sessions, guards, API keys, permissions or impersonation. Triggered automatically by factory-line-router (verify --full) when a diff enters the territory in triggers.json; S3 must be green for the exact tree before the work is done.",
+  "skills": [
+    {
+      "id": "factory-line",
+      "role": "orchestrator",
+      "install": "repo:.claude/skills/factory-line"
+    }
+  ],
+  "mcp": [],
+  "plugins": [
+    "factory-line-router"
+  ],
+  "stations": [
+    {
+      "id": "S1",
+      "title": "Map the auth surface",
+      "description": "Static: route security inventory holds (app.module.spec, Jest --ci), no route weaker than on the merge base, no role gained a permission, no dangerous auth pattern added. Weakenings must be acknowledged in security-acks.json.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    },
+    {
+      "id": "S2",
+      "title": "Unit-prove the auth territory",
+      "description": "Every spec in the auth territory passes and auth source changes ship with a spec change.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    },
+    {
+      "id": "S3",
+      "title": "Attack the live slot",
+      "description": "Live probes against the slot API: JWT forgery matrix, security-token sign-in and rotation, inventory-driven sweep of every authenticated route (anonymous, forged, bogus API key), impersonation and cross-user isolation.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    }
+  ],
+  "gate": {
+    "cumulative": true,
+    "optInEnv": null,
+    "stages": [
+      {
+        "id": "auth-surface",
+        "fromStation": "S1",
+        "tier": "full"
+      },
+      {
+        "id": "auth-unit-tests",
+        "fromStation": "S2",
+        "tier": "full"
+      },
+      {
+        "id": "auth-e2e",
+        "fromStation": "S3",
+        "tier": "full"
+      }
+    ]
+  },
+  "extraStages": [
+    {
+      "id": "auth-surface",
+      "kind": "test",
+      "tier": "full",
+      "description": "auth-change S1: route/permission weakening + dangerous pattern scan"
+    },
+    {
+      "id": "auth-unit-tests",
+      "kind": "test",
+      "tier": "full",
+      "description": "auth-change S2: territory specs + tests-ship-with-change"
+    },
+    {
+      "id": "auth-e2e",
+      "kind": "test",
+      "tier": "full",
+      "description": "auth-change S3: live attack probes on the slot API"
+    }
+  ],
+  "handoff": {
+    "autonomousShip": false,
+    "waitFor": "human security review of the S1 report and any new security-acks.json entry before merge"
+  },
+  "traveler": {
+    "kind": "pull-request-body",
+    "note": "Paste the gate summary (har line status auth-change) and the S1 weakening list into the PR; .har/runs is local evidence."
+  },
+  "prototypeNotes": [
+    "Territory is declared in triggers.json (paths, Prisma models, specs) — a repo-local extension read by factory-line-router, not part of the line contract.",
+    "Stages import .har/stages/lib/factory-line.mjs, shipped by the factory-line-router plugin (declared in plugins[]).",
+    "auth-e2e creates a throwaway user and account in the slot DB and deletes them at the end."
+  ]
+}

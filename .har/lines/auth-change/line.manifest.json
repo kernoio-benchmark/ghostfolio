@@ -1,0 +1,87 @@
+{
+  "kind": "line",
+  "id": "auth-change",
+  "title": "Authentication change line",
+  "program": "line.json",
+  "files": [
+    {
+      "src": "stages/auth-surface.sh",
+      "dest": ".har/stages/auth-surface.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/auth-surface.mjs",
+      "dest": ".har/stages/auth-surface.mjs"
+    },
+    {
+      "src": "stages/auth-unit-tests.sh",
+      "dest": ".har/stages/auth-unit-tests.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/auth-unit-tests.mjs",
+      "dest": ".har/stages/auth-unit-tests.mjs"
+    },
+    {
+      "src": "stages/auth-e2e.sh",
+      "dest": ".har/stages/auth-e2e.sh",
+      "executable": true
+    },
+    {
+      "src": "stages/auth-e2e.mjs",
+      "dest": ".har/stages/auth-e2e.mjs"
+    }
+  ],
+  "stages": [
+    {
+      "id": "auth-surface",
+      "kind": "test",
+      "description": "auth-change S1 — route security inventory, weakening vs merge base, role escalation, dangerous auth patterns (line gate, never on verify)",
+      "script": "stages/auth-surface.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-surface",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-surface"
+        }
+      ],
+      "tier": "full"
+    },
+    {
+      "id": "auth-unit-tests",
+      "kind": "test",
+      "description": "auth-change S2 — every spec in the auth territory passes; auth source changes ship with specs (line gate, never on verify)",
+      "script": "stages/auth-unit-tests.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-unit-tests",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-unit-tests"
+        }
+      ],
+      "tier": "full"
+    },
+    {
+      "id": "auth-e2e",
+      "kind": "test",
+      "description": "auth-change S3 — live attack probes: JWT forgery, token rotation, authenticated-route sweep, impersonation isolation (line gate, never on verify)",
+      "script": "stages/auth-e2e.sh",
+      "requiresAgentId": true,
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-e2e",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-e2e"
+        }
+      ],
+      "tier": "full"
+    }
+  ],
+  "nextSteps": [
+    "har line status auth-change",
+    "har line gate S3 --line auth-change --agent <id>"
+  ],
+  "docsPath": ".har/lines/auth-change/README.md"
+}

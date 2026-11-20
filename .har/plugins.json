@@ -8,6 +8,15 @@
   ],
   "plugins": [
     {
+      "id": "factory-line-router",
+      "source": "local",
+      "spec": "factory-line-router",
+      "stageIds": [
+        "factory-line-router"
+      ],
+      "installedAt": "2026-11-20T17:38:57.249Z"
+    },
+    {
       "id": "prisma-drift",
       "source": "local",
       "spec": "prisma-drift",

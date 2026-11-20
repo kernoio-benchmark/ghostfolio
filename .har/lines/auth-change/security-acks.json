@@ -1,0 +1,4 @@
+{
+  "$comment": "Reviewed security weakenings. auth-surface (S1) fails on any route/permission weakening vs the merge base unless it is acknowledged here with a reason. Adding an entry is itself a change in the auth-change territory, so it is visible in review. Entry: {\"subject\": \"<route key or ROLE>\", \"change\": \"<exact change string from the S1 report>\", \"reason\": \"why this is intended\"}.",
+  "acks": []
+}

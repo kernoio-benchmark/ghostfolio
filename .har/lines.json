@@ -1,0 +1,29 @@
+{
+  "version": "1",
+  "lines": [
+    {
+      "id": "auth-change",
+      "source": "local",
+      "spec": "auth-change",
+      "stageIds": [
+        "auth-surface",
+        "auth-unit-tests",
+        "auth-e2e"
+      ],
+      "programPath": ".har/lines/auth-change/line.json",
+      "installedAt": "2026-11-20T17:38:57.505Z"
+    },
+    {
+      "id": "banking-change",
+      "source": "local",
+      "spec": "banking-change",
+      "stageIds": [
+        "banking-contract",
+        "banking-unit-tests",
+        "banking-e2e"
+      ],
+      "programPath": ".har/lines/banking-change/line.json",
+      "installedAt": "2026-11-20T17:38:57.781Z"
+    }
+  ]
+}
