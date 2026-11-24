@@ -10,8 +10,9 @@
 #     → screenshots of the running slot app
 #     → branch har-agent/issue-<n> + PR (draft when red) with the proofs
 #
-# No CI runs on the PR. It is opened with GITHUB_TOKEN, which never triggers
-# other workflows, and HAR verification is the gate.
+# No CI executes on the PR. It is opened with GITHUB_TOKEN, so GitHub holds
+# pull_request workflows at "action required" instead of running them, and
+# HAR verification is the gate.
 # Design notes: .github/har-agent/README.md
 name: HAR issue agent
 

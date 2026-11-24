@@ -75,9 +75,11 @@ flowchart TD
 
 HAR already runs the checks CI would run (typecheck, Jest, ESLint, Prettier,
 API health, agent-usable smoke, Prisma drift, factory lines), and it runs them
-against a live app. GitHub never starts other workflows for events created
-with `GITHUB_TOKEN`, so `build-code.yml` doesn't run on the bot's PRs. HAR's
-verdict in the PR body is the gate.
+against a live app. The bot opens its PRs with `GITHUB_TOKEN`, so GitHub
+doesn't run `pull_request` workflows such as `build-code.yml` on them. GitHub
+lists them under Checks as **action required**, waiting for a maintainer's
+approval, and they never execute unless someone clicks approve. HAR's verdict
+in the PR body is the gate.
 
 ## Where the proofs live
 

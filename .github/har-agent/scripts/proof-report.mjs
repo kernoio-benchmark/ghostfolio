@@ -168,7 +168,7 @@ L.push(
 );
 L.push('');
 L.push(
-  "No CI workflow runs on this PR. The bot opened it with `GITHUB_TOKEN`, so GitHub doesn't trigger `pull_request` workflows. HAR verification above is the gate."
+  "No CI executes on this PR. The bot opened it with `GITHUB_TOKEN`, so GitHub holds `pull_request` workflows at *action required* and doesn't run them. HAR verification above is the gate."
 );
 L.push('');
 L.push('🤖 Generated with [Claude Code](https://claude.com/claude-code)');
