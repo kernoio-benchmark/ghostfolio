@@ -60,7 +60,8 @@ jobs:
         && contains(fromJSON(vars.HAR_AGENT_AUTHORS || '["antoineFrau"]'), github.event.sender.login))
       || (github.event_name == 'workflow_dispatch'
         && contains(fromJSON(vars.HAR_AGENT_AUTHORS || '["antoineFrau"]'), github.actor))
-    runs-on: ubuntu-latest
+    # Pinned: Playwright's browser deps don't support ubuntu-latest (26.04) yet.
+    runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
@@ -94,17 +95,22 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" -R "$GITHUB_REPOSITORY" --body \
             "🏭 HAR issue agent picked this up: Claude Code (\`$MODEL\`) is starting in a HAR slot. Live log: ${{ steps.issue.outputs.run_url }}"
 
-      - name: Install HAR, PM2, Claude Code and Playwright
+      - name: Install HAR, PM2 and Claude Code
         run: |
           npm install -g --no-audit --no-fund \
             "@osfactory/har@$HAR_VERSION" pm2 "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
-          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null
-          npm install --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
-          npx playwright install --with-deps chromium
           har --version && claude --version
           har telemetry off || true
           git config --global user.name "har-issue-agent[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Screenshots are proof, not a gate: a browser install problem must not stop the run.
+      - name: Install Playwright (screenshots)
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null
+          npm install --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          npx playwright install --with-deps chromium
 
       - name: Launch HAR slot
         id: slot

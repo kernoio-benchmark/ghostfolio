@@ -14,7 +14,7 @@ does the work. HAR provides the environment and the gate.
 
 ```mermaid
 flowchart TD
-    I["Issue opened by an allowed author<br/>(or labelled har-agent)"] --> W["GitHub Actions: har-issue-agent.yml<br/>ubuntu-latest, Docker, Node 22"]
+    I["Issue opened by an allowed author<br/>(or labelled har-agent)"] --> W["GitHub Actions: har-issue-agent.yml<br/>ubuntu-24.04, Docker, Node 22"]
     W --> L["har env launch 1 --work-id issue-N --work-url …<br/>Postgres + Redis (docker), npm ci, API + client under PM2,<br/>demo admin seeded"]
     L --> A
 
@@ -117,7 +117,7 @@ verdict in the PR body is the gate.
 - **Trust.** Only allowed authors trigger the agent, because issue text is a
   prompt-injection vector. The agent runs with `bypassPermissions` on a
   throwaway runner that holds only the Anthropic key.
-- **Runner size.** A standard `ubuntu-latest` runner (4 vCPU, 16 GB) runs one
+- **Runner size.** A standard `ubuntu-24.04` runner (4 vCPU, 16 GB) runs one
   slot. Each issue gets its own runner, so issues run in parallel.
 - **Time.** One run takes about 25–90 minutes. Most of that is `npm ci`, slot
   launch and the full Jest/ESLint suite, plus the agent's own iterations.
