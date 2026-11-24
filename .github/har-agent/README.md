@@ -91,7 +91,8 @@ verdict in the PR body is the gate.
 
 ## Setup
 
-1. Add the repository secret `ANTHROPIC_API_KEY`.
+1. Enable **Issues** (Settings → General → Features) and add the repository
+   secret `ANTHROPIC_API_KEY`.
 2. Settings → Actions → General → Workflow permissions: **Read and write**, and
    tick **Allow GitHub Actions to create and approve pull requests**.
 3. Optional repository variables:
@@ -101,6 +102,7 @@ verdict in the PR body is the gate.
 | `HAR_AGENT_AUTHORS`        | `["antoineFrau"]` | JSON list of logins whose issues, labels or dispatches start the agent |
 | `HAR_AGENT_MODEL`          | `claude-opus-5-5` | Claude model                                                           |
 | `HAR_AGENT_MAX_BUDGET_USD` | `40`              | Hard spend cap per run (`claude --max-budget-usd`)                     |
+| `HAR_AGENT_BASE_BRANCH`    | `main`            | Branch the slot starts from and the PR targets                         |
 
 ## Use
 

@@ -45,6 +45,9 @@ env:
   CLAUDE_CODE_VERSION: 2.1.331
   PLAYWRIGHT_VERSION: 1.56.1
   PROOFS_BRANCH: har-agent-proofs
+  # Branch the slot starts from and the PR targets (factory lines diff against it too).
+  BASE_BRANCH: ${{ vars.HAR_AGENT_BASE_BRANCH || 'main' }}
+  HAR_LINE_BASE: ${{ vars.HAR_AGENT_BASE_BRANCH || 'main' }}
 
 jobs:
   resolve:
@@ -62,10 +65,10 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout main
+      - name: Checkout the base branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ env.BASE_BRANCH }}
           fetch-depth: 0
           # The agent must not be able to push: credentials stay out of .git/config.
           persist-credentials: false
@@ -152,7 +155,7 @@ jobs:
             git add -A
             git commit -q -m "chore(agent): uncommitted changes left by the agent" -m "Refs #$ISSUE_NUMBER"
           fi
-          base=$(git merge-base HEAD main)
+          base=$(git merge-base HEAD "$BASE_BRANCH")
           ahead=$(git rev-list --count "$base..HEAD")
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
@@ -247,7 +250,7 @@ jobs:
           pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$branch" --state open --json number -q '.[0].number')
           if [ -z "$pr" ]; then
             draft=$([ "$ok" = true ] || echo --draft)
-            gh pr create -R "$GITHUB_REPOSITORY" --base main --head "$branch" $draft \
+            gh pr create -R "$GITHUB_REPOSITORY" --base "$BASE_BRANCH" --head "$branch" $draft \
               --title "$title" --body-file "$PROOF_DIR/pr-body.md"
             pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$branch" --state open --json number -q '.[0].number')
           else
