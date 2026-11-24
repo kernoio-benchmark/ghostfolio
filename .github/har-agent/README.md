@@ -41,6 +41,7 @@ flowchart TD
     P -->|red| D["draft PR with failing checks"]
     PR --> C["comment on the issue + evidence artifact"]
     D --> C
+    C -.->|"har control sync (HAR_PORTAL_TOKEN set)"| HQ[("HAR HQ portal<br/>runs, validations, work unit, agent usage")]
     PR -.->|"human review + merge (autonomousShip: false)"| M[main]
 ```
 
@@ -99,12 +100,33 @@ in the PR body is the gate.
    tick **Allow GitHub Actions to create and approve pull requests**.
 3. Optional repository variables:
 
-| Variable                   | Default           | Meaning                                                                |
-| -------------------------- | ----------------- | ---------------------------------------------------------------------- |
-| `HAR_AGENT_AUTHORS`        | `["antoineFrau"]` | JSON list of logins whose issues, labels or dispatches start the agent |
-| `HAR_AGENT_MODEL`          | `claude-opus-5-5` | Claude model                                                           |
-| `HAR_AGENT_MAX_BUDGET_USD` | `40`              | Hard spend cap per run (`claude --max-budget-usd`)                     |
-| `HAR_AGENT_BASE_BRANCH`    | `main`            | Branch the slot starts from and the PR targets                         |
+| Variable                   | Default                       | Meaning                                                                |
+| -------------------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `HAR_AGENT_AUTHORS`        | `["antoineFrau"]`             | JSON list of logins whose issues, labels or dispatches start the agent |
+| `HAR_AGENT_MODEL`          | `claude-opus-5-5`             | Claude model                                                           |
+| `HAR_AGENT_MAX_BUDGET_USD` | `40`                          | Hard spend cap per run (`claude --max-budget-usd`)                     |
+| `HAR_AGENT_BASE_BRANCH`    | `main`                        | Branch the slot starts from and the PR targets                         |
+| `HAR_PORTAL_URL`           | `https://portal.kerno.io/har` | HAR HQ portal that receives telemetry                                  |
+| `HAR_PORTAL_TRAJECTORY`    | `false`                       | `true` also forwards prompts, replies and tool output to HQ            |
+
+## HAR HQ telemetry (optional)
+
+Add the repository secret `HAR_PORTAL_TOKEN` (a HAR HQ ingest token for the
+workspace that should own this repo) and every run reports to HAR HQ:
+
+- **During the run:** HAR syncs automatically at launch and verify.
+- **At the end:** a full `har control sync` sends the runs, the slot, the
+  `issue-<n>` work unit and attempt, the validations, and the agent's Claude
+  Code usage (tokens, cost, step outline), attributed to the slot.
+- **What is sent:** by default no text leaves the runner. Set the variable
+  `HAR_PORTAL_TRAJECTORY=true` to also forward prompts, replies and tool output.
+- **Who holds the token:** only the HAR steps. The agent step runs with
+  `HAR_PORTAL_TOKEN` empty, like `GH_TOKEN`.
+- **When HQ is down:** the sync step is non-blocking, so an HQ outage never
+  stops a PR.
+
+Without the secret, nothing is sent and the workflow behaves as before. No
+Mission Control runs on the runner (`HAR_CONTROL_DISABLED=true`).
 
 ## Use
 

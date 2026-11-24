@@ -66,6 +66,14 @@ jobs:
     timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
+      # HAR HQ: with an ingest token, `har control sync` sends runs, slots, work
+      # units, validations and agent usage to the portal. Without one, nothing
+      # leaves the runner. No local Mission Control runs on the runner.
+      HAR_CONTROL_DISABLED: 'true'
+      HAR_PORTAL_URL: ${{ vars.HAR_PORTAL_URL || 'https://portal.kerno.io/har' }}
+      HAR_PORTAL_TOKEN: ${{ secrets.HAR_PORTAL_TOKEN }}
+      # true also forwards the trajectory text (prompts, replies, tool output).
+      HAR_PORTAL_TRAJECTORY: ${{ vars.HAR_PORTAL_TRAJECTORY || 'false' }}
     steps:
       - name: Checkout the base branch
         uses: actions/checkout@v4
@@ -104,6 +112,11 @@ jobs:
           har telemetry off || true
           git config --global user.name "har-issue-agent[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$HAR_PORTAL_TOKEN" ]; then
+            # Register the repo so sync picks it up (no terminal, so no selection prompt).
+            har control register --repo "$GITHUB_WORKSPACE" \
+              || echo "::warning::HAR HQ registration failed; the run continues without HQ telemetry"
+          fi
 
       # Screenshots are proof, not a gate: a browser install problem must not stop the run.
       - name: Install Playwright (screenshots)
@@ -140,6 +153,8 @@ jobs:
           # The agent gets no GitHub credentials: the workflow pushes and opens the PR.
           GH_TOKEN: ''
           GITHUB_TOKEN: ''
+          # …and no HQ token either: the workflow syncs to HQ after the agent stops.
+          HAR_PORTAL_TOKEN: ''
           FRONTEND_URL: ${{ steps.slot.outputs.frontend }}
           API_URL: ${{ steps.slot.outputs.api }}
         run: |
@@ -286,6 +301,13 @@ jobs:
             msg="❌ HAR issue agent failed before opening a PR (agent: $AGENT_OUTCOME)."
           fi
           gh issue comment "$ISSUE_NUMBER" -R "$GITHUB_REPOSITORY" --body "$msg"$'\n\n'"Run: $RUN_URL"
+
+      # Final full sync: everything above plus the agent's Claude Code session
+      # (tokens, cost, step outline), attributed to the slot and work unit issue-N.
+      - name: Send telemetry to HAR HQ
+        if: always() && env.HAR_PORTAL_TOKEN != ''
+        continue-on-error: true
+        run: har control sync --full
 
       - name: Upload HAR evidence
         if: always()
