@@ -1,0 +1,298 @@
+# HAR issue agent: GitHub issue → Claude Code in a HAR slot → verified PR.
+#
+#   issue opened by an allowed author (or labelled `har-agent`)
+#     → GitHub-hosted runner: Node + HAR + Docker infra, `har env launch 1`
+#     → Claude Code (headless) resolves the issue in the slot work dir,
+#       following AGENTS.md (verify --full, factory lines, commit)
+#     → the workflow re-checks the agent's commit without trusting it:
+#       factory-line gates for the lines the diff triggers, then
+#       `har env verify 1 --full` bound to the exact commit tree
+#     → screenshots of the running slot app
+#     → branch har-agent/issue-<n> + PR (draft when red) with the proofs
+#
+# No CI runs on the PR. It is opened with GITHUB_TOKEN, which never triggers
+# other workflows, and HAR verification is the gate.
+# Design notes: .github/har-agent/README.md
+name: HAR issue agent
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue to resolve
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: har-issue-agent-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+env:
+  # Who may start the agent: issue author (opened), labeller (labeled), or
+  # dispatcher. Override with the repository variable HAR_AGENT_AUTHORS (JSON).
+  AUTHORS: ${{ vars.HAR_AGENT_AUTHORS || '["antoineFrau"]' }}
+  ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+  AGENT_ID: '1'
+  MODEL: ${{ vars.HAR_AGENT_MODEL || 'claude-opus-5-5' }}
+  MAX_BUDGET_USD: ${{ vars.HAR_AGENT_MAX_BUDGET_USD || '40' }}
+  HAR_VERSION: 1.30.4
+  CLAUDE_CODE_VERSION: 2.1.331
+  PLAYWRIGHT_VERSION: 1.56.1
+  PROOFS_BRANCH: har-agent-proofs
+
+jobs:
+  resolve:
+    if: >-
+      (github.event_name == 'issues' && github.event.action == 'opened'
+        && contains(fromJSON(vars.HAR_AGENT_AUTHORS || '["antoineFrau"]'), github.event.issue.user.login)
+        && !contains(github.event.issue.labels.*.name, 'har-agent:skip'))
+      || (github.event_name == 'issues' && github.event.action == 'labeled'
+        && github.event.label.name == 'har-agent'
+        && contains(fromJSON(vars.HAR_AGENT_AUTHORS || '["antoineFrau"]'), github.event.sender.login))
+      || (github.event_name == 'workflow_dispatch'
+        && contains(fromJSON(vars.HAR_AGENT_AUTHORS || '["antoineFrau"]'), github.actor))
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          # The agent must not be able to push: credentials stay out of .git/config.
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.5
+          cache: npm
+
+      - name: Read the issue
+        id: issue
+        run: |
+          echo "PROOF_DIR=$RUNNER_TEMP/har-proof" >> "$GITHUB_ENV"
+          PROOF_DIR="$RUNNER_TEMP/har-proof" && mkdir -p "$PROOF_DIR"
+          gh issue view "$ISSUE_NUMBER" -R "$GITHUB_REPOSITORY" \
+            --json number,title,body,url,author,state > "$PROOF_DIR/issue.json"
+          node -e 'const i=require(process.argv[1]); if(i.state!=="OPEN"){console.error("issue is not open");process.exit(1)} console.log(`#${i.number} ${i.title} (by ${i.author.login})`)' "$PROOF_DIR/issue.json"
+          echo "run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Tell the issue the agent started
+        run: |
+          gh issue comment "$ISSUE_NUMBER" -R "$GITHUB_REPOSITORY" --body \
+            "🏭 HAR issue agent picked this up: Claude Code (\`$MODEL\`) is starting in a HAR slot. Live log: ${{ steps.issue.outputs.run_url }}"
+
+      - name: Install HAR, PM2, Claude Code and Playwright
+        run: |
+          npm install -g --no-audit --no-fund \
+            "@osfactory/har@$HAR_VERSION" pm2 "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null
+          npm install --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          npx playwright install --with-deps chromium
+          har --version && claude --version
+          har telemetry off || true
+          git config --global user.name "har-issue-agent[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Launch HAR slot
+        id: slot
+        run: |
+          title=$(node -p 'require(process.argv[1]).title' "$PROOF_DIR/issue.json")
+          url=$(node -p 'require(process.argv[1]).url' "$PROOF_DIR/issue.json")
+          har env launch "$AGENT_ID" --work-id "issue-$ISSUE_NUMBER" --work-source github \
+            --work-url "$url" --work-title "$title"
+          har env status --json > "$PROOF_DIR/status.json"
+          node -e '
+            const s = require(process.argv[1]).slots.find((x) => x.agentId === Number(process.argv[2]));
+            if (!s?.active) throw new Error("slot did not come up");
+            console.log(`work_dir=${s.workDir}`);
+            console.log(`branch=${s.branch}`);
+            console.log(`frontend=${s.previewUrls.frontend}`);
+            console.log(`api=${s.previewUrls.api}`);
+          ' "$PROOF_DIR/status.json" "$AGENT_ID" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Claude Code resolves the issue
+        id: agent
+        timeout-minutes: 150
+        continue-on-error: true
+        working-directory: ${{ steps.slot.outputs.work_dir }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The agent gets no GitHub credentials: the workflow pushes and opens the PR.
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+          FRONTEND_URL: ${{ steps.slot.outputs.frontend }}
+          API_URL: ${{ steps.slot.outputs.api }}
+        run: |
+          node "$GITHUB_WORKSPACE/.github/har-agent/scripts/build-prompt.mjs" "$PROOF_DIR/issue.json" "$PROOF_DIR/prompt.md"
+          set -o pipefail
+          claude -p "$(cat "$PROOF_DIR/prompt.md")" \
+            --model "$MODEL" --effort high \
+            --permission-mode bypassPermissions \
+            --max-budget-usd "$MAX_BUDGET_USD" \
+            --output-format stream-json --verbose \
+            | tee "$PROOF_DIR/agent-transcript.jsonl" \
+            | node "$GITHUB_WORKSPACE/.github/har-agent/scripts/stream-log.mjs" "$PROOF_DIR/agent-result.json"
+
+      - name: Collect the agent's commit
+        id: change
+        working-directory: ${{ steps.slot.outputs.work_dir }}
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::warning::The agent left uncommitted changes; committing them so they are verified and reviewable."
+            git add -A
+            git commit -q -m "chore(agent): uncommitted changes left by the agent" -m "Refs #$ISSUE_NUMBER"
+          fi
+          base=$(git merge-base HEAD main)
+          ahead=$(git rev-list --count "$base..HEAD")
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "ahead=$ahead" >> "$GITHUB_OUTPUT"
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+          echo "diffstat=$(git diff --shortstat "$base" HEAD | sed 's/^ //')" >> "$GITHUB_OUTPUT"
+          mkdir -p "$PROOF_DIR/lines"
+          cp .har/artifacts/issue-agent/summary.md "$PROOF_DIR/summary.md" 2>/dev/null || true
+          git log --oneline "$base..HEAD"
+
+      - name: Factory lines triggered by the diff
+        if: steps.change.outputs.ahead != '0'
+        run: |
+          node .github/har-agent/scripts/triggered-lines.mjs "${{ steps.slot.outputs.work_dir }}" > "$PROOF_DIR/triggered.json"
+          cat "$PROOF_DIR/triggered.json"
+          for line in $(node -p 'require(process.argv[1]).map((l) => l.line).join(" ")' "$PROOF_DIR/triggered.json"); do
+            station=$(node -p 'require(process.argv[1]).find((l) => l.line === process.argv[2]).finalStation' "$PROOF_DIR/triggered.json" "$line")
+            echo "::group::har line gate $station --line $line"
+            har line gate "$station" --line "$line" --agent "$AGENT_ID" --json > "$PROOF_DIR/lines/$line.json" || true
+            cat "$PROOF_DIR/lines/$line.json"
+            echo "::endgroup::"
+          done
+          har line status --json > "$PROOF_DIR/line-status.json" || true
+
+      - name: HAR full verification of the commit
+        if: steps.change.outputs.ahead != '0'
+        run: |
+          har env verify "$AGENT_ID" --full --json > "$PROOF_DIR/verify.json" || true
+          node -e 'const v=require(process.argv[1]); for (const s of v.stages) console.log(`${s.pass?"✓":"✗"} ${s.name}`); console.log(`verify: ${v.status}`)' "$PROOF_DIR/verify.json"
+          cp ".har/validations/${{ steps.change.outputs.tree }}.json" "$PROOF_DIR/validation.json" 2>/dev/null \
+            || echo "::warning::no HAR validation record for tree ${{ steps.change.outputs.tree }}"
+
+      - name: Screenshot the change in the slot app
+        if: steps.change.outputs.ahead != '0'
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_DIR: ${{ runner.temp }}/pw
+        run: node .github/har-agent/scripts/screenshot.mjs "${{ steps.slot.outputs.work_dir }}" "$AGENT_ID" "$PROOF_DIR/screenshots"
+
+      - name: Publish branch, proofs and PR
+        id: publish
+        if: steps.change.outputs.ahead != '0'
+        env:
+          WORK_DIR: ${{ steps.slot.outputs.work_dir }}
+          RUN_URL: ${{ steps.issue.outputs.run_url }}
+          HEAD_SHA: ${{ steps.change.outputs.head }}
+          TREE: ${{ steps.change.outputs.tree }}
+          BASE_SHA: ${{ steps.change.outputs.base }}
+          DIFFSTAT: ${{ steps.change.outputs.diffstat }}
+        run: |
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          branch="har-agent/issue-$ISSUE_NUMBER"
+
+          # 1. Proof files go to an orphan branch so the PR body can embed the screenshots.
+          proof_path="issue-$ISSUE_NUMBER/run-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pub="$RUNNER_TEMP/proofs-branch"
+          rm -rf "$pub" && mkdir -p "$pub" && cd "$pub" && git init -q
+          if git fetch -q --depth 1 "$remote" "$PROOFS_BRANCH" 2>/dev/null; then git checkout -q FETCH_HEAD; else git checkout -q --orphan "$PROOFS_BRANCH"; fi
+          mkdir -p "$proof_path"
+          cp -r "$PROOF_DIR/screenshots" "$proof_path/" 2>/dev/null || true
+          for f in verify.json triggered.json validation.json line-status.json summary.md agent-result.json; do
+            cp "$PROOF_DIR/$f" "$proof_path/" 2>/dev/null || true
+          done
+          cp -r "$PROOF_DIR/lines" "$proof_path/" 2>/dev/null || true
+          git add -A && git commit -q -m "proofs: issue #$ISSUE_NUMBER, run $GITHUB_RUN_ID" && git push -q "$remote" "HEAD:refs/heads/$PROOFS_BRANCH"
+          proofs_sha=$(git rev-parse HEAD)
+          cd "$GITHUB_WORKSPACE"
+
+          # 2. Build the PR body and verdict from the evidence.
+          export PROOFS_SHA="$proofs_sha" PROOF_PATH="$proof_path"
+          node -e '
+            const fs = require("fs"); const [dir, issueFile, validationFile] = process.argv.slice(1);
+            const issue = JSON.parse(fs.readFileSync(issueFile, "utf8"));
+            let validation = null; try { validation = JSON.parse(fs.readFileSync(validationFile, "utf8")); } catch {}
+            const e = process.env;
+            fs.writeFileSync(`${dir}/meta.json`, JSON.stringify({
+              issue: { number: issue.number, title: issue.title, url: issue.url },
+              runUrl: e.RUN_URL, model: e.MODEL, agentId: e.AGENT_ID,
+              headSha: e.HEAD_SHA, tree: e.TREE, baseSha: e.BASE_SHA, diffstat: e.DIFFSTAT, validation,
+              proofsUrl: `https://raw.githubusercontent.com/${e.GITHUB_REPOSITORY}/${e.PROOFS_SHA}/${e.PROOF_PATH}`,
+              proofsTreeUrl: `${e.GITHUB_SERVER_URL}/${e.GITHUB_REPOSITORY}/tree/${e.PROOFS_SHA}/${e.PROOF_PATH}`
+            }, null, 2));
+          ' "$PROOF_DIR" "$PROOF_DIR/issue.json" "$PROOF_DIR/validation.json"
+          verdict=$(node .github/har-agent/scripts/proof-report.mjs "$PROOF_DIR")
+          echo "$verdict"
+          ok=$(node -p 'JSON.parse(process.argv[1]).ok' "$verdict")
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+
+          # 3. Push the verified commit (exactly HEAD_SHA) and open or update the PR.
+          git -C "$WORK_DIR" push -q --force "$remote" "$HEAD_SHA:refs/heads/$branch"
+          title=$(node -p 'const i=require(process.argv[1]); `${i.title} (#${i.number})`' "$PROOF_DIR/issue.json")
+          pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$branch" --state open --json number -q '.[0].number')
+          if [ -z "$pr" ]; then
+            draft=$([ "$ok" = true ] || echo --draft)
+            gh pr create -R "$GITHUB_REPOSITORY" --base main --head "$branch" $draft \
+              --title "$title" --body-file "$PROOF_DIR/pr-body.md"
+            pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$branch" --state open --json number -q '.[0].number')
+          else
+            gh pr edit "$pr" -R "$GITHUB_REPOSITORY" --body-file "$PROOF_DIR/pr-body.md"
+            if [ "$ok" = true ]; then gh pr ready "$pr" -R "$GITHUB_REPOSITORY" || true; fi
+          fi
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+
+      - name: Report back on the issue
+        if: always()
+        env:
+          RUN_URL: ${{ steps.issue.outputs.run_url }}
+          AHEAD: ${{ steps.change.outputs.ahead }}
+          PR: ${{ steps.publish.outputs.pr }}
+          OK: ${{ steps.publish.outputs.ok }}
+          AGENT_OUTCOME: ${{ steps.agent.outcome }}
+        run: |
+          if [ -n "$PR" ] && [ "$OK" = true ]; then
+            msg="✅ HAR issue agent opened #$PR. \`har env verify --full\` and every triggered factory line passed on the PR's exact commit. Proofs are in the PR body."
+          elif [ -n "$PR" ]; then
+            msg="⚠️ HAR issue agent opened draft #$PR, but HAR verification is **red**. See the PR body for the failing checks."
+          elif [ "$AHEAD" = "0" ]; then
+            msg="ℹ️ HAR issue agent made no code change (agent: $AGENT_OUTCOME)."
+            [ -f "$PROOF_DIR/summary.md" ] && msg="$msg"$'\n\n'"$(cat "$PROOF_DIR/summary.md")"
+          else
+            msg="❌ HAR issue agent failed before opening a PR (agent: $AGENT_OUTCOME)."
+          fi
+          gh issue comment "$ISSUE_NUMBER" -R "$GITHUB_REPOSITORY" --body "$msg"$'\n\n'"Run: $RUN_URL"
+
+      - name: Upload HAR evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: har-evidence-issue-${{ env.ISSUE_NUMBER }}
+          if-no-files-found: ignore
+          retention-days: 30
+          path: |
+            ${{ env.PROOF_DIR }}
+            .har/runs
+            .har/validations
+            .har/artifacts
+            ${{ steps.slot.outputs.work_dir }}/.har/artifacts
+
+      - name: Fail the run when HAR is red
+        if: steps.change.outputs.ahead != '0' && steps.publish.outputs.ok != 'true'
+        run: |
+          echo "::error::HAR verification or a factory line is red, or the PR was not published. See the draft PR / evidence artifact."
+          exit 1
