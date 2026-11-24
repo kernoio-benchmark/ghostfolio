@@ -1,0 +1,9 @@
+# Issue #3: Show the number of accounts in the Accounts page heading
+
+- **Change:** the `/en/accounts` heading now reads "Accounts (N)". N is the length of the accounts list passed to the table (a new `accountsCount` getter in `accounts-page.component.ts`). While the accounts are loading (`accounts` is `undefined`), the count is not shown and the heading reads "Accounts".
+- **i18n:** the translatable label is still the same `i18n` "Accounts" message, now on an `<ng-container i18n>`. Its message ID doesn't change, so the existing translations in all locales (for example "Konten") still apply. The `(N)` suffix is a number in parentheses and needs no translation. I chose this over a new `Accounts ({{count}})` message, which would have shown untranslated English in every locale until translators caught up.
+- **Spacing:** Angular strips whitespace between elements, so the space sits inside the count span (` (N)`). The heading text reads "Accounts (3)", including for screen readers.
+- **Tests:** new `accounts-page.component.spec.ts` covers three cases: no count while loading, "Accounts (3)", and "Accounts (0)". It mocks the services and the accounts table.
+- **Test setup:** I added `import '@angular/localize/init'` to `apps/client/src/test-setup.ts`. This is the standard Angular test setup. Without it, any client page that imports `@ghostfolio/common/routes` throws `$localize is not defined` when the spec loads. Before this change, the client had no component specs.
+- **Checked in the slot:** signed in with Playwright and loaded `/en/accounts`. The heading rendered "Accounts (1)", matching the 1 row in the table and the 1 account returned by `GET /api/v1/account`.
+- **Verification:** the factory-line-router counts the accounts page as part of the banking-change territory. `har line gate S3 --line banking-change --agent 1` passed, and then `har env verify 1 --full` passed on commit 0d07e4299.

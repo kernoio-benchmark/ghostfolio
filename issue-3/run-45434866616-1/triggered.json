@@ -1,0 +1,11 @@
+[
+  {
+    "line": "banking-change",
+    "finalStation": "S3",
+    "reasons": [
+      "path apps/client/src/app/pages/accounts/accounts-page.component.spec.ts",
+      "path apps/client/src/app/pages/accounts/accounts-page.component.ts",
+      "path apps/client/src/app/pages/accounts/accounts-page.html"
+    ]
+  }
+]

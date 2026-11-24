@@ -1,0 +1,182 @@
+[
+  {
+    "lineId": "auth-change",
+    "title": "Authentication change line",
+    "programPath": ".har/lines/auth-change/line.json",
+    "installed": true,
+    "source": "local",
+    "stations": [
+      {
+        "id": "S1",
+        "title": "Map the auth surface",
+        "index": 0,
+        "requiredStageIds": [
+          "auth-surface"
+        ],
+        "passedStageIds": [],
+        "neverRunStageIds": [
+          "auth-surface"
+        ],
+        "missingStageIds": [],
+        "green": false,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      },
+      {
+        "id": "S2",
+        "title": "Unit-prove the auth territory",
+        "index": 1,
+        "requiredStageIds": [
+          "auth-surface",
+          "auth-unit-tests"
+        ],
+        "passedStageIds": [],
+        "neverRunStageIds": [
+          "auth-surface",
+          "auth-unit-tests"
+        ],
+        "missingStageIds": [],
+        "green": false,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      },
+      {
+        "id": "S3",
+        "title": "Attack the live slot",
+        "index": 2,
+        "requiredStageIds": [
+          "auth-surface",
+          "auth-unit-tests",
+          "auth-e2e"
+        ],
+        "passedStageIds": [],
+        "neverRunStageIds": [
+          "auth-surface",
+          "auth-unit-tests",
+          "auth-e2e"
+        ],
+        "missingStageIds": [],
+        "green": false,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      }
+    ],
+    "nextStationId": "S1",
+    "optInEnv": null,
+    "registeredStageIds": [
+      "auth-surface",
+      "auth-unit-tests",
+      "auth-e2e"
+    ],
+    "verifyLeaks": [],
+    "slotsInFlight": [
+      {
+        "agentId": 1,
+        "branch": "main-6bb7d-har-agent-1-2h7m",
+        "workUnitId": "issue-3",
+        "workDir": "/home/runner/worktrees/main-6bb7d-har-agent-1-2h7m"
+      }
+    ],
+    "handoffAutonomousShip": false,
+    "warnings": []
+  },
+  {
+    "lineId": "banking-change",
+    "title": "Banking change line",
+    "programPath": ".har/lines/banking-change/line.json",
+    "installed": true,
+    "source": "local",
+    "stations": [
+      {
+        "id": "S1",
+        "title": "Ledger contract",
+        "index": 0,
+        "requiredStageIds": [
+          "banking-contract"
+        ],
+        "passedStageIds": [
+          "banking-contract"
+        ],
+        "neverRunStageIds": [],
+        "missingStageIds": [],
+        "green": true,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      },
+      {
+        "id": "S2",
+        "title": "Unit-prove the banking territory",
+        "index": 1,
+        "requiredStageIds": [
+          "banking-contract",
+          "banking-unit-tests"
+        ],
+        "passedStageIds": [
+          "banking-contract",
+          "banking-unit-tests"
+        ],
+        "neverRunStageIds": [],
+        "missingStageIds": [],
+        "green": true,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      },
+      {
+        "id": "S3",
+        "title": "Prove the ledger live",
+        "index": 2,
+        "requiredStageIds": [
+          "banking-contract",
+          "banking-unit-tests",
+          "banking-e2e"
+        ],
+        "passedStageIds": [
+          "banking-contract",
+          "banking-unit-tests",
+          "banking-e2e"
+        ],
+        "neverRunStageIds": [],
+        "missingStageIds": [],
+        "green": true,
+        "work": {
+          "source": "none",
+          "ids": [],
+          "optional": true
+        }
+      }
+    ],
+    "currentStationId": "S3",
+    "optInEnv": null,
+    "registeredStageIds": [
+      "banking-contract",
+      "banking-unit-tests",
+      "banking-e2e"
+    ],
+    "verifyLeaks": [],
+    "slotsInFlight": [
+      {
+        "agentId": 1,
+        "branch": "main-6bb7d-har-agent-1-2h7m",
+        "workUnitId": "issue-3",
+        "workDir": "/home/runner/worktrees/main-6bb7d-har-agent-1-2h7m"
+      }
+    ],
+    "handoffAutonomousShip": false,
+    "warnings": []
+  }
+]

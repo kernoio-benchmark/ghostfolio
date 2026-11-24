@@ -1,0 +1,52 @@
+{
+  "status": "pass",
+  "agent_id": 1,
+  "total_ms": 23986,
+  "stages": [
+    {
+      "name": "typecheck",
+      "pass": true,
+      "ms": 14946
+    },
+    {
+      "name": "api-health",
+      "pass": true,
+      "ms": 20
+    },
+    {
+      "name": "unit-tests",
+      "pass": true,
+      "ms": 3429
+    },
+    {
+      "name": "lint",
+      "pass": true,
+      "ms": 1051
+    },
+    {
+      "name": "readiness",
+      "pass": true,
+      "ms": 6
+    },
+    {
+      "name": "format-check",
+      "pass": true,
+      "ms": 1197
+    },
+    {
+      "name": "agent-usable",
+      "pass": true,
+      "ms": 134
+    },
+    {
+      "name": "prisma-drift",
+      "pass": true,
+      "ms": 2845
+    },
+    {
+      "name": "factory-line-router",
+      "pass": true,
+      "ms": 353
+    }
+  ]
+}

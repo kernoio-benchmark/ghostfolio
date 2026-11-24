@@ -1,0 +1,15 @@
+{
+  "validationId": "b82b8149-aa6d-424b-ac66-33894be9a3c6",
+  "treeHash": "854cd2548c4e2bc6a99486ab7fd3e6da4facc653",
+  "headSha": "0d07e4299a4e4b0db8816fa641b76181fcf3373e",
+  "branch": "main-6bb7d-har-agent-1-2h7m",
+  "workDir": "/home/runner/worktrees/main-6bb7d-har-agent-1-2h7m",
+  "harnessRoot": "/home/runner/work/ghostfolio/ghostfolio",
+  "agentId": 1,
+  "status": "pass",
+  "full": true,
+  "runId": "e9e1c417-0da9-40c6-9406-874d9deeea2b",
+  "changedFiles": [],
+  "createdAt": "2026-11-24T16:25:47.350Z",
+  "updatedAt": "2026-11-24T16:27:28.778Z"
+}

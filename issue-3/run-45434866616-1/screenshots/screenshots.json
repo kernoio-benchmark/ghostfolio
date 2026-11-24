@@ -1,0 +1,20 @@
+[
+  {
+    "name": "home",
+    "path": "/en/home",
+    "note": "baseline: signed in on the slot app",
+    "file": "01-home.png",
+    "ok": true,
+    "status": 200,
+    "consoleErrors": []
+  },
+  {
+    "name": "accounts-page",
+    "path": "/en/accounts",
+    "note": "Heading reads 'Accounts (N)' where N matches the number of rows in the accounts table",
+    "file": "02-accounts-page.png",
+    "ok": true,
+    "status": 200,
+    "consoleErrors": []
+  }
+]

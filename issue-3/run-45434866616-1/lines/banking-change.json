@@ -1,0 +1,26 @@
+{
+  "lineId": "banking-change",
+  "station": "S3",
+  "stages": [
+    {
+      "stageId": "banking-contract",
+      "fromStation": "S1",
+      "status": "pass",
+      "durationMs": 223
+    },
+    {
+      "stageId": "banking-unit-tests",
+      "fromStation": "S2",
+      "status": "pass",
+      "durationMs": 11563
+    },
+    {
+      "stageId": "banking-e2e",
+      "fromStation": "S3",
+      "status": "pass",
+      "durationMs": 1402
+    }
+  ],
+  "pass": true,
+  "skipped": false
+}
