@@ -1,0 +1,103 @@
+{
+  "contractVersion": 1,
+  "id": "banking-change",
+  "title": "Banking change line",
+  "description": "Ledger-specific checks for any change that touches cash accounts, account balances, balance transfers or platforms (banks/brokers). Triggered automatically by factory-line-router (verify --full) when a diff enters the territory in triggers.json; S3 must be green for the exact tree before the work is done.",
+  "skills": [
+    {
+      "id": "factory-line",
+      "role": "orchestrator",
+      "install": "repo:.claude/skills/factory-line"
+    }
+  ],
+  "mcp": [],
+  "plugins": [
+    "factory-line-router"
+  ],
+  "stations": [
+    {
+      "id": "S1",
+      "title": "Ledger contract",
+      "description": "Static: banking route policy (guards, permission, scope, impersonation, redaction), Prisma ledger invariants, migration safety (applied migrations immutable, no silent destruction of banking data). Exceptions go to ledger-acks.json.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    },
+    {
+      "id": "S2",
+      "title": "Unit-prove the banking territory",
+      "description": "Every spec in the banking territory (account helper, cash calculators, balance-date validator, …) passes and banking source changes ship with a spec change.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    },
+    {
+      "id": "S3",
+      "title": "Prove the ledger live",
+      "description": "Live on the slot API with throwaway accounts: exact money conservation on transfers, rejection of invalid transfers with untouched balances, one balance per day, cross-user isolation (IDOR), cascade on account deletion.",
+      "work": {
+        "source": "none",
+        "ids": [],
+        "optional": true
+      }
+    }
+  ],
+  "gate": {
+    "cumulative": true,
+    "optInEnv": null,
+    "stages": [
+      {
+        "id": "banking-contract",
+        "fromStation": "S1",
+        "tier": "full"
+      },
+      {
+        "id": "banking-unit-tests",
+        "fromStation": "S2",
+        "tier": "full"
+      },
+      {
+        "id": "banking-e2e",
+        "fromStation": "S3",
+        "tier": "full"
+      }
+    ]
+  },
+  "extraStages": [
+    {
+      "id": "banking-contract",
+      "kind": "test",
+      "tier": "full",
+      "description": "banking-change S1: route policy, ledger schema invariants, migration safety"
+    },
+    {
+      "id": "banking-unit-tests",
+      "kind": "test",
+      "tier": "full",
+      "description": "banking-change S2: territory specs + tests-ship-with-change"
+    },
+    {
+      "id": "banking-e2e",
+      "kind": "test",
+      "tier": "full",
+      "description": "banking-change S3: live ledger proofs on the slot API"
+    }
+  ],
+  "handoff": {
+    "autonomousShip": false,
+    "waitFor": "human review of the ledger report and any new ledger-acks.json entry before merge"
+  },
+  "traveler": {
+    "kind": "pull-request-body",
+    "note": "Paste the gate summary (har line status banking-change) into the PR; .har/runs is local evidence."
+  },
+  "prototypeNotes": [
+    "Territory is declared in triggers.json (paths, Prisma models, specs) — a repo-local extension read by factory-line-router, not part of the line contract.",
+    "Stages import .har/stages/lib/factory-line.mjs, shipped by the factory-line-router plugin (declared in plugins[]).",
+    "banking-e2e stays in one currency: slots have no exchange-rate data (cron disabled), so cross-currency transfers fall back to 1:1 and conservation cannot be asserted there."
+  ]
+}

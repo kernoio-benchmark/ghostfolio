@@ -14,7 +14,8 @@
     "readiness",
     "format-check",
     "agent-usable",
-    "prisma-drift"
+    "prisma-drift",
+    "factory-line-router"
   ],
   "stages": [
     {
@@ -153,6 +154,116 @@
           "path": ".har/artifacts/prisma-drift",
           "kind": "directory",
           "description": "Artifacts for the prisma-drift stage"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "factory-line-router",
+      "kind": "test",
+      "description": "Route the diff to the factory lines it touches (auth-change, banking-change) and require their final-station gate to be green for the exact tree",
+      "script": "stages/factory-line-router.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/factory-line-router",
+          "kind": "directory",
+          "description": "Artifacts for the factory-line-router stage"
+        },
+        {
+          "path": ".har/artifacts/factory-line-stamps",
+          "kind": "directory",
+          "description": "Per-slot gate stamps (tree fingerprint + status) written by line stages"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "auth-surface",
+      "kind": "test",
+      "description": "auth-change S1 — route security inventory, weakening vs merge base, role escalation, dangerous auth patterns (line gate, never on verify)",
+      "script": "stages/auth-surface.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-surface",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-surface"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "auth-unit-tests",
+      "kind": "test",
+      "description": "auth-change S2 — every spec in the auth territory passes; auth source changes ship with specs (line gate, never on verify)",
+      "script": "stages/auth-unit-tests.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-unit-tests",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-unit-tests"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "auth-e2e",
+      "kind": "test",
+      "description": "auth-change S3 — live attack probes: JWT forgery, token rotation, authenticated-route sweep, impersonation isolation (line gate, never on verify)",
+      "script": "stages/auth-e2e.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/auth-e2e",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of auth-e2e"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "banking-contract",
+      "kind": "test",
+      "description": "banking-change S1 — banking route policy, ledger schema invariants, migration safety (line gate, never on verify)",
+      "script": "stages/banking-contract.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-contract",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-contract"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "banking-unit-tests",
+      "kind": "test",
+      "description": "banking-change S2 — every spec in the banking territory passes; banking source changes ship with specs (line gate, never on verify)",
+      "script": "stages/banking-unit-tests.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-unit-tests",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-unit-tests"
+        }
+      ],
+      "requiresAgentId": true,
+      "tier": "full"
+    },
+    {
+      "id": "banking-e2e",
+      "kind": "test",
+      "description": "banking-change S3 — live ledger proofs: conservation, invalid transfers, daily balances, IDOR isolation, cascade (line gate, never on verify)",
+      "script": "stages/banking-e2e.sh",
+      "artifacts": [
+        {
+          "path": ".har/artifacts/banking-e2e",
+          "kind": "directory",
+          "description": "Report, result JSON and raw evidence of banking-e2e"
         }
       ],
       "requiresAgentId": true,
