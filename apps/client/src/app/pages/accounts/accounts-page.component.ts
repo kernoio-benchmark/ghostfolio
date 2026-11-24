@@ -54,6 +54,13 @@ export class GfAccountsPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly userService = inject(UserService);
 
+  /**
+   * Number of accounts shown in the table, or undefined while loading
+   */
+  protected get accountsCount(): number | undefined {
+    return this.accounts?.length;
+  }
+
   public ngOnInit() {
     this.impersonationStorageService
       .onChangeHasImpersonation()
